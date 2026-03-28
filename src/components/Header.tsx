@@ -90,18 +90,19 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
+          {/* Coșul e mereu vizibil — și pentru guest */}
+          <Link to="/cart">
+            <Button variant="ghost" size="icon" className="relative">
+              <ShoppingCart className="w-5 h-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              )}
+            </Button>
+          </Link>
           {user ? (
             <>
-              <Link to="/cart">
-                <Button variant="ghost" size="icon" className="relative">
-                  <ShoppingCart className="w-5 h-5" />
-                  {itemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none">
-                      {itemCount > 9 ? '9+' : itemCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2 px-2">
@@ -195,6 +196,18 @@ const Header = () => {
                   </Link>
                 </>
               )}
+              {/* Coș mobil — mereu vizibil */}
+              <Link to="/cart" className="w-full mt-1" onClick={() => setMobileOpen(false)}>
+                <Button variant="outline" className="w-full relative" size="sm">
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Coș
+                  {itemCount > 0 && (
+                    <span className="ml-auto bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {itemCount > 9 ? '9+' : itemCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
