@@ -1,50 +1,46 @@
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, LogIn, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, CartItem, Product } from "@/lib/supabase";
-
-type CartItemWithProduct = CartItem & { product: Product };
+import { useCart } from "@/contexts/CartContext";
+import { supabase } from "@/lib/supabase";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const Cart = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [items, setItems] = useState<CartItemWithProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items, loading, updateQty, removeItem, clearCart } = useCart();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
 
-  const fetchCart = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("cart_items")
-      .select("*, product:products(*)")
-      .eq("user_id", user.id);
-    setItems((data as CartItemWithProduct[]) || []);
-    setLoading(false);
-  };
+  const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
 
-  useEffect(() => { fetchCart(); }, [user]);
-
-  const updateQty = async (id: string, newQty: number) => {
-    if (newQty <= 0) { removeItem(id); return; }
-    await supabase.from("cart_items").update({ quantity: newQty }).eq("id", id);
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, quantity: newQty } : i));
-  };
-
-  const removeItem = async (id: string) => {
-    await supabase.from("cart_items").delete().eq("id", id);
-    setItems((prev) => prev.filter((i) => i.id !== id));
+  const handleRemove = async (productId: string) => {
+    await removeItem(productId);
     toast({ title: "Produs eliminat", description: "Produsul a fost scos din coș." });
   };
 
   const handleCheckout = async () => {
-    if (!user || items.length === 0) return;
+    if (items.length === 0) return;
+
+    // Dacă nu e autentificat → arătăm dialogul
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+
     setCheckingOut(true);
 
-    // Create one order per product in cart → saved in `orders` table so they appear in Profile
     const orderInserts = items.map((item) => ({
       user_id: user.id,
       stl_file_name: `marketplace:${item.product.name}`,
@@ -57,25 +53,21 @@ const Cart = () => {
       total_price: item.product.price * item.quantity,
     }));
 
-    const { error: ordersError } = await supabase.from("orders").insert(orderInserts);
+    const { error } = await supabase.from("orders").insert(orderInserts);
 
-    if (ordersError) {
-      toast({ title: "Eroare la plasarea comenzii", description: ordersError.message, variant: "destructive" });
+    if (error) {
+      toast({ title: "Eroare la plasarea comenzii", description: error.message, variant: "destructive" });
       setCheckingOut(false);
       return;
     }
 
-    // Clear cart after successful order creation
-    await supabase.from("cart_items").delete().eq("user_id", user.id);
-    setItems([]);
+    await clearCart();
     setCheckingOut(false);
     toast({
       title: "Comandă plasată!",
       description: `Comanda ta de ${total.toFixed(2)} RON a fost înregistrată și apare în profilul tău.`,
     });
   };
-
-  const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
 
   return (
     <Layout>
@@ -111,11 +103,7 @@ const Cart = () => {
                 <div key={item.id} className="bg-background p-6 flex items-center gap-6">
                   <div className="w-16 h-16 border border-border flex items-center justify-center shrink-0 overflow-hidden bg-muted">
                     {item.product.image_url ? (
-                      <img
-                        src={item.product.image_url}
-                        alt={item.product.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-2xl">📦</span>
                     )}
@@ -149,10 +137,7 @@ const Cart = () => {
                     {(item.product.price * item.quantity).toFixed(2)} RON
                   </span>
 
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
-                  >
+                  <button onClick={() => handleRemove(item.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -179,6 +164,67 @@ const Cart = () => {
           )}
         </div>
       </section>
+
+      {/* Dialog autentificare la checkout */}
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Finalizează comanda</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Pentru a plasa comanda ai nevoie de un cont. Produsele din coș sunt salvate — nu se pierd la autentificare.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-2">
+            {/* Rezumat produse */}
+            <div className="border border-border bg-muted/30 p-4 space-y-2 rounded-sm">
+              {items.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground truncate max-w-[200px]">
+                    {item.product.name} × {item.quantity}
+                  </span>
+                  <span className="font-mono font-semibold shrink-0 ml-4">
+                    {(item.product.price * item.quantity).toFixed(2)} RON
+                  </span>
+                </div>
+              ))}
+              <div className="pt-2 border-t border-border flex justify-between text-sm font-bold">
+                <span>Total</span>
+                <span className="font-mono text-primary">{total.toFixed(2)} RON</span>
+              </div>
+            </div>
+
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => {
+                setShowAuthDialog(false);
+                navigate('/login', { state: { from: { pathname: '/cart' } } });
+              }}
+            >
+              <LogIn className="w-4 h-4" />
+              Autentifică-te
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              size="lg"
+              onClick={() => {
+                setShowAuthDialog(false);
+                navigate('/register', { state: { from: { pathname: '/cart' } } });
+              }}
+            >
+              <UserPlus className="w-4 h-4" />
+              Creează un cont nou
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground pt-1">
+              Produsele tale vor fi păstrate în coș și după autentificare.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

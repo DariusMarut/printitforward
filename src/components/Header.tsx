@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Printer, ShoppingCart, User, LogOut, Settings } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const { itemCount } = useCart();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -93,6 +95,11 @@ const Header = () => {
               <Link to="/cart">
                 <Button variant="ghost" size="icon" className="relative">
                   <ShoppingCart className="w-5 h-5" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none">
+                      {itemCount > 9 ? '9+' : itemCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
               <DropdownMenu>

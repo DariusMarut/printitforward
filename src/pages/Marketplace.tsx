@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ShoppingCart, Filter, Search, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 import { supabase, Product } from "@/lib/supabase";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -35,7 +35,7 @@ const HighlightMatch = ({ text, query }: { text: string; query: string }) => {
 
 const Marketplace = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { addItem, items: cartItems } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Toate");
@@ -80,27 +80,14 @@ const Marketplace = () => {
   });
 
   const addToCart = async (product: Product) => {
-    if (!user) {
-      toast({
-        title: "Autentificare necesară",
-        description: "Trebuie să fii autentificat pentru a adăuga în coș.",
-        variant: "destructive",
-      });
-      return;
-    }
     setAddingId(product.id);
-    const { error } = await supabase
-      .from("cart_items")
-      .upsert(
-        { user_id: user.id, product_id: product.id, quantity: 1 },
-        { onConflict: "user_id,product_id" }
-      );
+    await addItem(product);
     setAddingId(null);
-    if (error) {
-      toast({ title: "Eroare", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Adăugat în coș!", description: `${product.name} a fost adăugat.` });
-    }
+    const alreadyIn = cartItems.some((i) => i.id === product.id);
+    toast({
+      title: alreadyIn ? "Cantitate actualizată" : "Adăugat în coș!",
+      description: `${product.name} ${alreadyIn ? "a fost actualizat." : "a fost adăugat."}`,
+    });
   };
 
   const hasActiveSearch = search.trim().length > 0;
