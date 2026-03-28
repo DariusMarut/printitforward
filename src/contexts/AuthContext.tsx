@@ -19,15 +19,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  // Start as true — nu randăm nimic până sesiunea e complet restaurată
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (!error && data) setProfile(data as Profile);
+  const fetchProfile = async (userId: string): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (!error && data) setProfile(data as Profile);
+    } catch {
+      // silently ignore — profile fetch failure shouldn't break the app
+    }
   };
 
   const refreshProfile = async () => {
@@ -35,38 +40,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    // Listen for auth changes
+    // 1. Setăm listener-ul PRIMUL — înainte de getSession
+    //    Asta garantează că nu ratăm niciun event de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
-      if (event === 'TOKEN_REFRESHED') {
-        setSession(session);
-        setUser(session?.user ?? null);
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-      } else {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
+      async (event, newSession) => {
+        if (!mounted) return;
+
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+
+        if (newSession?.user) {
+          // fetchProfile în background — nu blocăm loading pentru el
+          fetchProfile(newSession.user.id);
         } else {
           setProfile(null);
         }
-      }
-      setLoading(false);
-    }
-  );
 
-    return () => subscription.unsubscribe();
+        // SIGNED_OUT: curăță tot și deblochează UI
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        }
+
+        setLoading(false);
+      }
+    );
+
+    // 2. Restaurăm sesiunea existentă din localStorage
+    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
+      if (!mounted) return;
+
+      if (existingSession?.user) {
+        setSession(existingSession);
+        setUser(existingSession.user);
+        // Așteptăm profilul înainte să deblocăm loading
+        await fetchProfile(existingSession.user.id);
+      }
+
+      // Acum e safe să randăm — avem sesiunea + profilul
+      setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
@@ -86,7 +107,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    setLoading(true);
     await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setLoading(false);
   };
 
   return (
