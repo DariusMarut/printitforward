@@ -45,7 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+    async (event, session) => {
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(session);
+        setUser(session?.user ?? null);
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      } else {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -53,9 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
         }
-        setLoading(false);
       }
-    );
+      setLoading(false);
+    }
+  );
 
     return () => subscription.unsubscribe();
   }, []);
