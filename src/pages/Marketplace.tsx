@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Filter, Search, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useCart } from "@/contexts/CartContext";
 import { supabase, Product } from "@/lib/supabase";
 
@@ -35,6 +37,7 @@ const HighlightMatch = ({ text, query }: { text: string; query: string }) => {
 
 const Marketplace = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { addItem, items: cartItems } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +90,15 @@ const Marketplace = () => {
     toast({
       title: alreadyIn ? "Cantitate actualizată" : "Adăugat în coș!",
       description: `${product.name} ${alreadyIn ? "a fost actualizat." : "a fost adăugat."}`,
+      action: (
+        <ToastAction
+          altText="Vezi coșul"
+          onClick={() => navigate("/cart")}
+          className="font-mono text-xs"
+        >
+          Vezi coșul →
+        </ToastAction>
+      ),
     });
   };
 

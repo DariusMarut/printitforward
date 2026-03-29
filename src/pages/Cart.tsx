@@ -100,46 +100,52 @@ const Cart = () => {
           ) : (
             <div className="space-y-px bg-border">
               {items.map((item) => (
-                <div key={item.id} className="bg-background p-6 flex items-center gap-6">
-                  <div className="w-16 h-16 border border-border flex items-center justify-center shrink-0 overflow-hidden bg-muted">
-                    {item.product.image_url ? (
-                      <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl">📦</span>
-                    )}
-                  </div>
+                <div key={item.id} className="bg-background p-4 sm:p-6">
+                  {/* Row 1: imagine + info + trash */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 border border-border flex items-center justify-center shrink-0 overflow-hidden bg-muted">
+                      {item.product.image_url ? (
+                        <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl">📦</span>
+                      )}
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                      {item.product.category}
-                    </p>
-                    <h3 className="font-semibold truncate">{item.product.name}</h3>
-                    <span className="font-mono text-primary">{item.product.price.toFixed(2)} RON</span>
-                  </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                        {item.product.category}
+                      </p>
+                      <h3 className="font-semibold truncate">{item.product.name}</h3>
+                      <span className="font-mono text-primary text-sm">{item.product.price.toFixed(2)} RON / buc</span>
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateQty(item.id, item.quantity - 1)}
-                      className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <span className="font-mono w-8 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQty(item.id, item.quantity + 1)}
-                      className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
-                    >
-                      <Plus className="w-3 h-3" />
+                    <button onClick={() => handleRemove(item.id)} className="text-muted-foreground hover:text-destructive transition-colors shrink-0 mt-1">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <span className="font-mono font-bold w-24 text-right">
-                    {(item.product.price * item.quantity).toFixed(2)} RON
-                  </span>
+                  {/* Row 2: cantitate + total aliniate sub info */}
+                  <div className="flex items-center justify-between mt-3 pl-[4.5rem] sm:pl-[5rem]">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateQty(item.id, item.quantity - 1)}
+                        className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="font-mono w-8 text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => updateQty(item.id, item.quantity + 1)}
+                        className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
 
-                  <button onClick={() => handleRemove(item.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <span className="font-mono font-bold text-sm sm:text-base">
+                      {(item.product.price * item.quantity).toFixed(2)} RON
+                    </span>
+                  </div>
                 </div>
               ))}
 

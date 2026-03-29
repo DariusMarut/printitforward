@@ -168,46 +168,52 @@ const Header = () => {
                 {item.label}
               </Link>
             ))}
-            <div className="flex gap-3 mt-4 pt-4 border-t border-border">
-              {user ? (
-                <>
-                  <Link to="/profile" className="flex-1" onClick={() => setMobileOpen(false)}>
-                    <Button variant="ghost" className="w-full gap-2" size="sm">
-                      <AvatarBadge size="sm" />
-                      Profil
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    size="sm"
-                    onClick={() => { handleSignOut(); setMobileOpen(false); }}
-                  >
-                    <LogOut className="w-4 h-4 mr-1" /> Deconectare
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
-                    <Button variant="ghost" className="w-full" size="sm">Autentificare</Button>
-                  </Link>
-                  <Link to="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full" size="sm">Înregistrare</Button>
-                  </Link>
-                </>
-              )}
-              {/* Coș mobil — mereu vizibil */}
-              <Link to="/cart" className="w-full mt-1" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full relative" size="sm">
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  Coș
+            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
+              {/* Coș — mereu vizibil, pe toată lățimea */}
+              <Link to="/cart" className="w-full" onClick={() => setMobileOpen(false)}>
+                <Button variant="outline" className="w-full justify-between" size="sm">
+                  <span className="flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Coș de cumpărături
+                  </span>
                   {itemCount > 0 && (
-                    <span className="ml-auto bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {itemCount > 9 ? '9+' : itemCount}
                     </span>
                   )}
                 </Button>
               </Link>
+
+              {/* Auth buttons */}
+              <div className="flex gap-2">
+                {user ? (
+                  <>
+                    <Link to="/profile" className="flex-1" onClick={() => setMobileOpen(false)}>
+                      <Button variant="ghost" className="w-full gap-2" size="sm">
+                        <AvatarBadge size="sm" />
+                        Profil
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      size="sm"
+                      onClick={() => { handleSignOut(); setMobileOpen(false); }}
+                    >
+                      <LogOut className="w-4 h-4 mr-1" /> Deconectare
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
+                      <Button variant="ghost" className="w-full" size="sm">Autentificare</Button>
+                    </Link>
+                    <Link to="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
+                      <Button className="w-full" size="sm">Înregistrare</Button>
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
