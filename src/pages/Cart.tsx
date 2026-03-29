@@ -1,7 +1,7 @@
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, LogIn, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,9 @@ const Cart = () => {
   const { items, loading, updateQty, removeItem, clearCart } = useCart();
   const [checkingOut, setCheckingOut] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+
+  // Scroll to top whenever the cart page is opened
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
 
   const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
 
