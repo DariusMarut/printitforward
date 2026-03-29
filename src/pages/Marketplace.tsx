@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 
 // ── Constants ────────────────────────────────────────────────
-const PRODUCTS_PER_PAGE = 8;
+const PRODUCTS_PER_PAGE = 16;
 
 const CATEGORY_LABELS: Record<string, string> = {
   Toate: "Toate",
